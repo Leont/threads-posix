@@ -1,0 +1,68 @@
+#! perl
+use strict;
+use warnings;
+use Config;
+
+use threads::posix;
+use Test::More tests => 9;
+
+use Thread::Queue;
+use Thread::Semaphore;
+use POSIX qw/pause/;
+
+my $q = Thread::Queue->new();
+
+sub expect {
+	my $name = shift;
+	my $left = $q->dequeue;
+	my $right = $q->dequeue;
+	local $Test::Builder::Level = $Test::Builder::Level + 1;
+	ok($left, $right);
+	is($right, $name);
+}
+
+### Start of Testing ###
+ok(1, 'Loaded');
+
+### Thread cancel ###
+
+# Set up to capture warning when thread terminates
+my @errs : shared;
+
+$SIG{__WARN__} = sub { push(@errs, @_); };
+
+$SIG{QUIT} = sub { die };
+
+sub thr_func {
+	my $q = shift;
+
+	# Thread 'cancellation' signal handler
+	$SIG{QUIT} = sub {
+		$q->enqueue(1, 'Thread received signal');
+		die("Thread killed\n");
+	};
+
+	# Thread sleeps until signalled
+	$q->enqueue(1, 'Thread sleeping');
+	pause;
+	# Should not go past here
+	$q->enqueue(0, 'Thread terminated normally');
+	return ('ERROR');
+}
+
+# Create thread
+my $thr = threads::posix->create(\&thr_func, $q);
+ok($thr, 'Created thread');
+expect('Thread sleeping');
+
+# Signal thread
+ok($thr->kill('QUIT') == $thr, 'Signalled thread');
+expect('Thread received signal');
+
+# Cleanup
+my $rc = $thr->join();
+ok(!$rc, 'No thread return value');
+
+# Check for thread termination message
+ok(@errs && $errs[0] =~ /Thread killed/, 'Thread termination warning');
+
