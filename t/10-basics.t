@@ -8,7 +8,7 @@ use Test::More tests => 9;
 
 use Thread::Queue;
 use Thread::Semaphore;
-use POSIX qw/pause/;
+use POSIX qw/sigaction pause SIGQUIT SIGTERM SIGTSTP/;
 
 my $q = Thread::Queue->new();
 
@@ -18,7 +18,7 @@ sub expect {
 	my $right = $q->dequeue;
 	local $Test::Builder::Level = $Test::Builder::Level + 1;
 	ok($left, $right);
-	is($right, $name);
+	is($right, $name, "Receive \"$name\"");
 }
 
 ### Start of Testing ###
@@ -31,16 +31,19 @@ my @errs : shared;
 
 $SIG{__WARN__} = sub { push(@errs, @_); };
 
-$SIG{QUIT} = sub { die };
-
 sub thr_func {
 	my $q = shift;
 
 	# Thread 'cancellation' signal handler
-	$SIG{QUIT} = sub {
+	my $handler = sub {
+		note("In signal handler");
 		$q->enqueue(1, 'Thread received signal');
 		die("Thread killed\n");
 	};
+	my $action = POSIX::SigAction->new($handler, undef, 0);
+	$action->safe(1);
+	sigaction(SIGQUIT, $action);
+	note("In thread...");
 
 	# Thread sleeps until signalled
 	$q->enqueue(1, 'Thread sleeping');
