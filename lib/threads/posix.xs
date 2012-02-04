@@ -46,9 +46,6 @@ static void die_sys(pTHX_ const char* format) {
 	Perl_croak(aTHX_ format, buffer);
 }
 
-void cleanup(void* foo) {
-}
-
 MODULE = threads::posix				PACKAGE = threads::posix
 
 SV*
