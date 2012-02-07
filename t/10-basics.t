@@ -6,9 +6,10 @@ use Config;
 use threads::posix;
 use Test::More tests => 9;
 
+use POSIX qw/sigaction pause SIGQUIT SIGTERM SIGTSTP/;
+use Time::HiRes qw/sleep/;
 use Thread::Queue;
 use Thread::Semaphore;
-use POSIX qw/sigaction pause SIGQUIT SIGTERM SIGTSTP/;
 
 my $q = Thread::Queue->new();
 
@@ -20,6 +21,8 @@ sub expect {
 	ok($left, $right);
 	is($right, $name, "Receive \"$name\"");
 }
+
+alarm 10;
 
 ### Start of Testing ###
 ok(1, 'Loaded');
@@ -59,6 +62,7 @@ ok($thr, 'Created thread');
 expect('Thread sleeping');
 
 # Signal thread
+sleep 0.5;
 ok($thr->kill('QUIT') == $thr, 'Signalled thread');
 expect('Thread received signal');
 
