@@ -6,7 +6,7 @@ use XSLoader;
 
 XSLoader::load(__PACKAGE__, __PACKAGE__->VERSION);
 
-use parent 'threads';
+use base 'threads';
 
 sub import {
 	my ($class, @args) = @_;
