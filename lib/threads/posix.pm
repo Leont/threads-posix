@@ -8,6 +8,15 @@ XSLoader::load(__PACKAGE__, __PACKAGE__->VERSION);
 
 use parent 'threads';
 
+sub import {
+	my ($class, @args) = @_;
+	if (@args && $args[0] eq '-global') {
+		no warnings 'redefine';
+		*threads::kill = \&kill;
+		*threads::cancel = \&cancel;
+	}
+}
+
 1;
 
 #ABSTRACT: more POSIX correct threads
@@ -16,12 +25,15 @@ __END__
 
 =head1 SYNOPSIS
 
+ use threads::posix;
  my $thread = thread::posix->create(sub { ... });
  $thread->kill(SIGALRM);
 
 =head1 DESCRIPTION
 
 This module extends L<threads> to provide behaviors that are more conformant to what POSIX prescribes. You should realize that this doesn't in any way change the threads themselves, just how you intereract with them. Everything not described here should work exactly the same as in threads.pm.
+
+If this module is used with the -global option it will monkey-patch threads.pm.
 
 =method kill
 

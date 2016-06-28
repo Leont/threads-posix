@@ -1,6 +1,7 @@
 Revision history for threads-posix
 
 {{$NEXT}}
+          Add a -global option to importer
 
 0.002     2012-02-07 19:32:15 Europe/Amsterdam
           Check for threads and Unix before continuing to configure
