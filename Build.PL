@@ -3,11 +3,12 @@ use warnings;
 use Module::Build;
 use Config;
 
+my %forbidden = map { ($_ => 1) } qw/MSWin32 VMS/;
 if (not $Config{useithreads}) {
 	print STDERR "Can't use threads::posix without threading support\n";
 	exit 0;
 }
-if (eval { require Perl::OSType } && !Perl::OSType::is_os_type('Unix')) {
+if ($forbidden{$^O}) {
 	print STDERR "Can't use threads::posix on non-unix\n";
 	exit 0;
 }
